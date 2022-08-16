@@ -7,17 +7,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Config {
 
     public static byte[] http404page=null;
-    public static Map<String,TypedFileName> filetable = new ConcurrentHashMap<>();
-    public static Map<String,String> preprocessorTable = new ConcurrentHashMap<>();
-    private static HashMap<String,String> filetypes = loadFileTypes();
+    public static Map<String,TypedFileName> fileTable = new ConcurrentHashMap<>();
+    private static final HashMap<String,String> FILE_TYPES = loadFileTypes();
     private static volatile long lastReload=0;
-    private boolean autoGenerateFileTable=true;
     private static final int RELOAD_DELAY=10;//in seconds
 
     public static void reloadFileTable(){
@@ -25,37 +23,18 @@ public class Config {
             lastReload=Instant.now().getEpochSecond();
             loadFileTable();
             lastReload=Instant.now().getEpochSecond();
-            reloadPreprocessorTable();
-        }
-    }
-    public static void reloadPreprocessorTable(){
-        preprocessorTable.clear();
-        try{
-            BufferedReader reader = new BufferedReader(new FileReader("preprocessorIndex"));
-            try{
-                String line;
-                while((line=reader.readLine())!=null){
-                    String[] split = line.split(" ");
-                    if(split.length<2)
-                        continue;
-                    preprocessorTable.put(split[0],split[1]);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }catch(FileNotFoundException e){
-            e.printStackTrace();
-            System.err.println("failed to read preprocessorIndex, preprocessing disabled");
         }
     }
 
+
+
     private static void loadFileTable(){
-        filetable.clear();
+        fileTable.clear();
         generateFileTable();
         try{
-            loadFileTableFromFile("filetable");
+            loadFileTableFromFile();
         }catch(IOException e){
-            System.err.println("FAILED TO LOAD THE FILETABLE");
+            System.err.println("FAILED TO LOAD THE FILE TABLE");
             e.printStackTrace();
         }
     }
@@ -64,13 +43,13 @@ public class Config {
         File webfiles = new File("webfiles");
         if(!webfiles.isDirectory())
             return;
-        ArrayList<String> filenames = new ArrayList<String>();
+        ArrayList<String> filenames = new ArrayList<>();
         addAllFiles(webfiles,filenames);
         for(String s : filenames)
-            filetable.put(s.substring(s.indexOf("/")),new TypedFileName(s,getFileType(s)));
+            fileTable.put(s.substring(s.indexOf("/")),new TypedFileName(s,getFileType(s)));
     }
     private static String getFileType(String s){
-        return filetypes.get(trimToFileExt(s));
+        return FILE_TYPES.get(trimToFileExt(s));
     }
     private static String trimToFileExt(String s){
         int index=0;
@@ -83,12 +62,12 @@ public class Config {
         if(!file.isDirectory())
             dest.add(file.getPath());
         else
-            for(File f : file.listFiles())
+            for(File f : Objects.requireNonNull(file.listFiles()))
                 addAllFiles(f,dest);
     }
 
-    private static void loadFileTableFromFile(String fname) throws IOException {
-        BufferedReader reader  = new BufferedReader(new FileReader(fname));
+    private static void loadFileTableFromFile() throws IOException {
+        BufferedReader reader  = new BufferedReader(new FileReader("filetable"));
         String line;
         while((line=reader.readLine())!=null)
             processLine(line);
@@ -96,7 +75,7 @@ public class Config {
     }
     private static void processLine(String line)throws ArrayIndexOutOfBoundsException{
         String[] split = line.split(" ");
-        filetable.put(split[0],new TypedFileName("webfiles/"+split[1],split[2]));
+        fileTable.put(split[0],new TypedFileName("webfiles/"+split[1],split[2]));
     }
 
     public static HashMap<String,String> loadFileTypes(){
@@ -129,11 +108,11 @@ public class Config {
     }
 
     public static TypedInputStream getFile(String fname){
-        TypedFileName type = filetable.get(fname);
+        TypedFileName type = fileTable.get(fname);
         if(type==null)
             return null;
         try{
-            return new TypedInputStream(new FileInputStream(type.getName()),type.getType());
+            return new TypedInputStream(new FileInputStream(type.getName()),type.getFILE_TYPE());
         }catch(FileNotFoundException e){
             return null;
         }
@@ -144,20 +123,20 @@ public class Config {
 
 class TypedFileName{
 
-    private String fname;
-    private String type;
+    private final String FILE_NAME;
+    private final String FILE_TYPE;
 
     public TypedFileName(String fname, String type){
-        this.type=type;
-        this.fname=fname;
+        this.FILE_TYPE =type;
+        this.FILE_NAME =fname;
     }
 
     public String getName(){
-        return fname;
+        return FILE_NAME;
     }
 
-    public String getType(){
-        return type;
+    public String getFILE_TYPE(){
+        return FILE_TYPE;
     }
 
 }

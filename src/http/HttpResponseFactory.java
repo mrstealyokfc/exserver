@@ -22,13 +22,6 @@ public class HttpResponseFactory {
         response.addHeader("Server","Ex-veilnaught server 2");
         return response;
     }
-    public static HttpResponse create401Response(){
-        HttpResponse response = new HttpResponse(401);
-        response.setStatus("YOU CANT DO THAT!");
-        response.addHeader("date",new Date().toString());
-        response.addHeader("Server","Ex-veilnaught server 2");
-        return response;
-    }
     public static HttpResponse create404Response(){
         HttpResponse response = new HttpResponse(404);
         response.setStatus("I AM LOST");

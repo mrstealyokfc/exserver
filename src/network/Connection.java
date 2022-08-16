@@ -7,7 +7,7 @@ public class Connection {
 
     Socket socket;
     volatile boolean processingState;
-    private TimeOutThread timout;
+    private final TimeOutThread timout;
     public Connection(Socket socket){
         this.socket=socket;
         timout=new TimeOutThread(socket);
@@ -30,10 +30,6 @@ public class Connection {
         socket.close();
     }
 
-    public void updateTimeOut(){
-        timout.interrupt();
-    }
-
     public void pauseTimeOut(){
         timout.setActive(false);
         timout.interrupt();
@@ -49,7 +45,7 @@ public class Connection {
 
 class TimeOutThread extends Thread{
 
-    private Socket socket;
+    private final Socket socket;
     private volatile boolean active;
     public TimeOutThread(Socket socket){
         this.socket=socket;
@@ -59,6 +55,7 @@ class TimeOutThread extends Thread{
         this.active=active;
     }
 
+    @SuppressWarnings("BusyWait")
     public void run(){
         while(true) {
             try {
@@ -67,7 +64,8 @@ class TimeOutThread extends Thread{
                     socket.close();
                     break;
                 }
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
+
             } catch (IOException e) {
                 e.printStackTrace();
                 break;

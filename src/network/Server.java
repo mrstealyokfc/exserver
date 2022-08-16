@@ -4,10 +4,10 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 public class Server extends Thread{
-    private volatile List<Connection> connections = Collections.synchronizedList(new ArrayList<Connection>());
-    private ExecutorService threadPool = Executors.newCachedThreadPool();
-    private NewConnectionListenerThread newConnectionListenerThread;
-    private ServerSocket ss;
+    private final List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
+    private final ExecutorService threadPool = Executors.newCachedThreadPool();
+    private final NewConnectionListenerThread newConnectionListenerThread;
+    private final ServerSocket ss;
     public Server(int port) throws IOException {
         ss=new ServerSocket(port,10);
         newConnectionListenerThread =  new NewConnectionListenerThread(ss,connections);
@@ -56,8 +56,8 @@ public class Server extends Thread{
     }
 }
 class NewConnectionListenerThread extends Thread{
-    private ServerSocket server;
-    private volatile List<Connection> destination;
+    private final ServerSocket server;
+    private final List<Connection> destination;
     public NewConnectionListenerThread(ServerSocket server, List<Connection> destination){
         this.server=server;
         this.destination=destination;

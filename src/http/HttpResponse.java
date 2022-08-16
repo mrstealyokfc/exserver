@@ -1,9 +1,7 @@
 package http;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,9 +12,9 @@ public class HttpResponse {
     final String HTTP_VERSION="HTTP/1.1";
     private TypedInputStream fileInput=null;
 
-    private byte[] buffer = new byte[0x10000];
+    private final byte[] buffer = new byte[0x10000];
 
-    private Map<String,String> headers = new HashMap<String,String>();
+    private final Map<String,String> headers = new HashMap<>();
 
     public HttpResponse(int code){
         this.code=code;
@@ -32,13 +30,14 @@ public class HttpResponse {
 
     public byte[] getSerializedHeaders(){
         headers.put("Content-length",String.valueOf(getFileLength()));
-        if(fileInput!=null)
-            headers.put("Content-type",fileInput.getType());
-        if(fileInput.getType().toLowerCase().contains("image"))
-            headers.put("Cache-Control","public, max-age=3600");
-        StringBuilder sb = new StringBuilder(HTTP_VERSION+" "+String.valueOf(code)+" "+status+"\n");
+        if(fileInput!=null) {
+            headers.put("Content-type", fileInput.getType());
+            if(fileInput.getType().toLowerCase().contains("image"))
+                headers.put("Cache-Control","public, max-age=3600");
+        }
+        StringBuilder sb = new StringBuilder(HTTP_VERSION+" "+code+" "+status+"\n");
         for(String s : headers.keySet())
-            sb.append(s+": "+headers.get(s)+"\n");
+            sb.append(s).append(": ").append(headers.get(s)).append("\n");
         sb.append("\n");
         return sb.toString().getBytes();
     }
@@ -55,10 +54,6 @@ public class HttpResponse {
         }
     }
 
-    public boolean hasFile(){
-        return fileInput!=null;
-    }
-
     public void addHeader(String key,String value){
         headers.put(key,value);
     }
@@ -70,7 +65,7 @@ public class HttpResponse {
             e.printStackTrace();
         }
 
-        int length=0;
+        int length;
         if(fileInput==null){
             out.flush();
             return;

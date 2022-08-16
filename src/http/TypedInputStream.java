@@ -4,8 +4,8 @@ import java.io.InputStream;
 
 public class TypedInputStream {
 
-    private String type;
-    private InputStream input;
+    private final String type;
+    private final InputStream input;
 
     public TypedInputStream(InputStream input,String type){
         this.type=type;

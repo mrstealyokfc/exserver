@@ -1,19 +1,15 @@
 package network;
 
 import config.Config;
-import http.HttpRequest;
-import http.HttpResponse;
-import http.HttpResponseFactory;
-import http.TypedInputStream;
+import http.*;
 
-import javax.annotation.processing.FilerException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class RequestHandler implements Runnable{
-    private volatile Connection connection;
+    private final Connection connection;
     public RequestHandler(Connection connection){
         this.connection=connection;
         connection.setProcessingState(true);
@@ -41,10 +37,7 @@ public class RequestHandler implements Runnable{
             Thread.sleep(10);
             if(connection.getSocket().getInputStream().available()>0)
                 return false;
-        }catch(IOException e){
-            closeSocket();
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        }catch(IOException | InterruptedException e){
             closeSocket();
             e.printStackTrace();
         }
@@ -54,13 +47,11 @@ public class RequestHandler implements Runnable{
     private void processNextRequest()throws IOException{
         Config.reloadFileTable();
         HttpRequest request = new HttpRequest(getRequest());
-        if(request.needsAdditionalData())
-            request.setAdditionalData(connection.getSocket().getInputStream());
         sendResponse(request);
     }
 
     private void sendResponse(HttpRequest request) throws IOException {
-        HttpResponse response=null;
+        HttpResponse response;
         if(!request.isValid()){
             response = HttpResponseFactory.create400Response();
             response.send(connection.getSocket().getOutputStream());
@@ -68,8 +59,10 @@ public class RequestHandler implements Runnable{
         }
         if(request.getMethod().equalsIgnoreCase("GET"))
             response = getResponse(request);
-        if(response==null)
+        else
             response = HttpResponseFactory.create501Response();
+        if(response==null)
+            response = HttpResponseFactory.create500Response();
         response.send(connection.getSocket().getOutputStream());
     }
 
@@ -104,10 +97,6 @@ public class RequestHandler implements Runnable{
         }
     }
 
-    private HttpResponse putResponse(){
-        return HttpResponseFactory.create401Response();
-    }
-
     private HttpResponse getResponse(HttpRequest request){
         try{
             return findFile(request.getLocator());
@@ -119,13 +108,12 @@ public class RequestHandler implements Runnable{
 
     }
 
-    private HttpResponse findFile(String fname) throws IOException{
-        TypedInputStream file = Config.getFile(fname);
+    private HttpResponse findFile(String urlLocation) throws IOException{
+        TypedInputStream file = Config.getFile(urlLocation);
         if(file==null)
-            throw new FileNotFoundException("cannot find: "+fname);
+            throw new FileNotFoundException("cannot find: "+urlLocation);
         HttpResponse response = HttpResponseFactory.create200Response();
         response.setFileInput(file);
         return response;
     }
-
 }
